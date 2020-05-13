@@ -136,6 +136,50 @@ RSpec.describe GenericPhrase, type: :model do
       end
     end
   end
+
+  describe "most_frequent_for_page" do
+    context "with empty database" do
+      it "returns no generic phrases" do
+        page = FactoryBot.create(:page)
+        start_date = Date.new(2020, 3, 10)
+        end_date = Date.new(2020, 3, 15)
+
+        result = GenericPhrase.most_frequent_for_page(page, start_date, end_date)
+
+        expect(result).to be_empty
+      end
+    end
+
+    context "with populated database" do
+      it "returns no generic phrases when date range matches no generic phrases" do
+        page = FactoryBot.create(:page)
+        create_generic_phrase("2020-03-20", verb: "find", adjective: "help", page: page)
+        start_date = Date.new(2020, 3, 10)
+        end_date = Date.new(2020, 3, 15)
+
+        result = GenericPhrase.most_frequent_for_page(page, start_date, end_date)
+
+        expect(result).to be_empty
+      end
+
+      it "returns generic phrases when date range matches generic phrases" do
+        page = FactoryBot.create(:page)
+        create_generic_phrase("2020-03-10", verb: "find", adjective: "help", page: page)
+        create_generic_phrase("2020-03-10", verb: "find", adjective: "information", page: page)
+        start_date = Date.new(2020, 3, 10)
+        end_date = Date.new(2020, 3, 15)
+
+        expected_result = [
+          { phrase_text: "find-help", total: 1 },
+          { phrase_text: "find-information", total: 1 },
+        ]
+
+        result = GenericPhrase.most_frequent_for_page(page, start_date, end_date)
+
+        expect(result).to eq(expected_result)
+      end
+    end
+  end
 end
 
 def id(result)
@@ -154,7 +198,7 @@ def adjective(result)
   result[3]
 end
 
-def create_generic_phrase(survey_start_date, verb: "", adjective: "")
+def create_generic_phrase(survey_start_date, verb: "", adjective: "", page: nil)
   phrase = FactoryBot.create(:phrase)
   survey = FactoryBot.create(:survey, started_at: survey_start_date)
   survey_answer = FactoryBot.create(:survey_answer, survey: survey)
@@ -164,6 +208,13 @@ def create_generic_phrase(survey_start_date, verb: "", adjective: "")
   adjective = FactoryBot.create(:adjective, name: adjective)
   generic_phrase = FactoryBot.create(:generic_phrase, verb: verb, adjective: adjective)
   FactoryBot.create(:phrase_generic_phrase, phrase: phrase, generic_phrase: generic_phrase)
+
+  if page
+    visitor = FactoryBot.create(:visitor)
+    visit = FactoryBot.create(:visit, visitor: visitor)
+    FactoryBot.create(:page_visit, page: page, visit: visit)
+    FactoryBot.create(:survey_visit, survey: survey, visit: visit)
+  end
 
   generic_phrase
 end
