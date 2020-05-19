@@ -4,6 +4,12 @@
     title: "Generic phrases"
 } %>
 
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-full">
+    <h4 class="govuk-heading-s"><%= human_readable_date_range(from_date_as_datetime, to_date_as_datetime) %></h4>
+  </div>
+</div>
+
 <%= form_with(url: generic_phrases_url, method: "get") do %>
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full govuk-grid-column-full--background-light-grey">
