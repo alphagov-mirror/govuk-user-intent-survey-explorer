@@ -1,5 +1,9 @@
 <%= content_for :title, "Generic phrases" %>
 
+<%= render "govuk_publishing_components/components/title", {
+    title: "Generic phrases"
+} %>
+
 <%= form_with(url: generic_phrases_url, method: "get") do %>
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full govuk-grid-column-full--background-light-grey">
