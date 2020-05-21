@@ -2,19 +2,15 @@ module Searchable
   extend ActiveSupport::Concern
 
   included do
-    helper_method :q, :from_date, :to_date, :from_date_as_datetime, :to_date_as_datetime
-  end
-
-  def search_params
-    params.permit(:q, :sort_key, :sort_dir, from_date: %i[day month year], to_date: %i[day month year])
+    helper_method :q, :from_date, :to_date, :from_date_as_datetime, :to_date_as_datetime, :sort_key, :sort_dir
   end
 
   def from_date
-    search_params.fetch(:from_date, default_from_date)
+    search_options.fetch(:from_date, default_from_date)
   end
 
   def to_date
-    search_params.fetch(:to_date, default_to_date)
+    search_options.fetch(:to_date, default_to_date)
   end
 
   def default_from_date
@@ -36,7 +32,7 @@ module Searchable
   end
 
   def q
-    search_params[:q].to_s
+    search_options[:q].to_s
   end
 
   def from_date_as_datetime
@@ -51,5 +47,63 @@ module Searchable
     DateTime.new(date_parameters[:year].to_i, date_parameters[:month].to_i, date_parameters[:day].to_i)
   rescue ArgumentError
     nil
+  end
+
+private
+
+  def page
+    params[:page] || 1
+  end
+
+  def search_options
+    options = params.permit(:q, from_date: %i[day month year], to_date: %i[day month year]).merge({
+      sort_key: sort_key,
+      sort_dir: sort_dir,
+    })
+
+    options[:verb] = verb if verb.present?
+    options[:adjective] = adjective if adjective.present?
+
+    options
+  end
+
+  def sort_dir
+    params[:sort_dir] == "desc" ? :desc : :asc
+  end
+
+  def sort_key
+    if params[:sort_key].present?
+      allowed_sort_keys.include?(params[:sort_key]) ? params[:sort_key] : default_sort_key
+    else
+      default_sort_key
+    end
+  end
+
+  def default_sort_key
+    ""
+  end
+
+  def allowed_sort_keys
+    []
+  end
+
+  def verb
+    verb_param = params.permit(:verb).fetch(:verb, "")
+
+    verb_results.include?(verb_param) ? verb_param : ""
+  end
+
+  def adjective
+    adjective_param = params.permit(:adjective).fetch(:adjective, "")
+
+    adjective_results.include?(adjective_param) ? adjective_param : ""
+  end
+
+  def verb_results
+    Verb.unique_sorted.map(&:name)
+  end
+
+  def adjective_results
+    Adjective.unique_sorted.map(&:name)
   end
 end
